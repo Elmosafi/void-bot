@@ -10,7 +10,7 @@ import (
 )
 
 const tgToken = "8667015772:AAGspUPTMcHS698FAKw4US06gBSz-q-UKy8"
-const geminiKey = "AIzaSyAkP5EkEYcUSX1iw9VUKlfPWF_fiqFfdWY"
+const geminiKey = "AIzaSyDcLCH8NzSPjTA-UjN3LU1Ca2rppD4aDA0"
 
 type webhookReqBody struct {
 	Message struct {
