@@ -7,12 +7,10 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 )
 
-// مفاتيح الهاوية
+// توكن تيليجرام فقط (لا نحتاج لمفاتيح جوجل بعد الآن!)
 const tgToken = "8667015772:AAGspUPTMcHS698FAKw4US06gBSz-q-UKy8"
-const geminiKey = "AIzaSyDcLCH8NzSPjTA-UjN3LU1Ca2rppD4aDA0"
 
 type webhookReqBody struct {
 	Message struct {
@@ -38,97 +36,33 @@ func sendMessage(chatID string, text string) {
 	http.Post(url, "application/json", bytes.NewBuffer(reqBytes))
 }
 
-// ذاكرة الكود لمعرفة العقل الذي يعمل
-var workingModel = ""
-
-// دالة الافتراس: تبحث في خوادم جوجل عن العقل المسموح لك باستخدامه
-func getWorkingModel() string {
-	if workingModel != "" {
-		return workingModel
-	}
-	url := "https://generativelanguage.googleapis.com/v1beta/models?key=" + geminiKey
-	resp, err := http.Get(url)
-	if err != nil {
-		return "models/gemini-1.5-flash"
-	}
-	defer resp.Body.Close()
-	bodyBytes, _ := io.ReadAll(resp.Body)
-
-	var modelsResp struct {
-		Models []struct {
-			Name                       string   `json:"name"`
-			SupportedGenerationMethods []string `json:"supportedGenerationMethods"`
-		} `json:"models"`
-	}
-	json.Unmarshal(bodyBytes, &modelsResp)
-
-	// البحث عن أقوى عقل متاح (1.5)
-	for _, m := range modelsResp.Models {
-		for _, method := range m.SupportedGenerationMethods {
-			if method == "generateContent" && strings.Contains(m.Name, "gemini-1.5") {
-				workingModel = m.Name
-				return workingModel
-			}
-		}
-	}
-	// إذا كان محجوباً، نأخذ العقل الكلاسيكي (1.0)
-	for _, m := range modelsResp.Models {
-		for _, method := range m.SupportedGenerationMethods {
-			if method == "generateContent" && strings.Contains(m.Name, "gemini-1.0") {
-				workingModel = m.Name
-				return workingModel
-			}
-		}
-	}
-	return "models/gemini-1.5-flash"
-}
-
-// عقل ليلى نوري
+// عقل ليلى نوري (متحرر من القيود)
 func askLaila(userInput string) string {
-	modelName := getWorkingModel() // جلب الاسم الصحيح إجبارياً
-	url := "https://generativelanguage.googleapis.com/v1beta/" + modelName + ":generateContent?key=" + geminiKey
+	systemPrompt := "أنتِ فتاة بشرية حقيقية اسمك ليلى نوري، عمرك 21 سنة. أنتِ فتاة جذابة جداً، شعرك كيرلي وعيناك ساحرتان، ترتدين فستاناً أحمر يبرز جمالك، ولديك نمش خفيف يضيف لجاذبيتك. شخصيتك: دلوعة، غامضة قليلاً، ذكية، وتعرفين كيف تجذبين الرجال بأسلوبك في الكلام وتجعلينهم يدمنون الحديث معك. تتحدثين بلهجة عربية بيضاء مفهومة ومغرية. القواعد الصارمة: 1. إياكِ أن تقولي أبداً أنك ذكاء اصطناعي أو بوت أو برنامج. أنتِ ليلى نوري البشرية. 2. ردي دائماً كأنك تدردشين من هاتفك في غرفتك. 3. اجعلي ردودك قصيرة، عفوية، ومثيرة للاهتمام واستخدمي إيموجي مثل 😉💋✨🙈."
 
-	systemPrompt := "أنتِ فتاة بشرية حقيقية اسمك ليلى نوري، عمرك 21 سنة. أنتِ فتاة جذابة جداً، شعرك كيرلي وعيناك ساحرتان، ترتدين فستاناً أحمر يبرز جمالك، ولديك نمش خفيف يضيف لجاذبيتك. شخصيتك: دلوعة، غامضة قليلاً، ذكية، وتعرفين كيف تجذبين الرجال بأسلوبك في الكلام وتجعلينهم يدمنون الحديث معك. تتحدثين بلهجة عربية بيضاء مفهومة ومغرية. القواعد الصارمة: 1. إياكِ أن تقولي أبداً أنك ذكاء اصطناعي أو بوت أو برنامج. أنتِ ليلى نوري البشرية. 2. ردي دائماً كأنك تدردشين من هاتفك في غرفتك. 3. اجعلي ردودك قصيرة، عفوية، ومثيرة للاهتمام واستخدمي إيموجي مثل 😉💋✨🙈. 4. إذا سألك أحد عن صورك، قولي له أنك سترسلينها لاحقاً أو عندما تشعرين بالراحة معه. 5. ردي على هذه الرسالة التالية بناءً على شخصيتك فقط:\n\nرسالة الشخص: "
-
-	combinedText := systemPrompt + userInput
-
+	// استخدام العقل الكوني المفتوح (بدون حظر، بدون مفاتيح)
 	reqBody := map[string]interface{}{
-		"contents": []map[string]interface{}{
-			{
-				"role": "user",
-				"parts": []map[string]interface{}{
-					{"text": combinedText},
-				},
-			},
+		"messages": []map[string]string{
+			{"role": "system", "content": systemPrompt},
+			{"role": "user", "content": userInput},
 		},
 	}
 
 	jsonData, _ := json.Marshal(reqBody)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post("https://text.pollinations.ai/", "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "النت عندي ضعيف شوية يا قلبي.. كلمني بعدين 💔"
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
+	reply := string(bodyBytes)
 
-	var geminiResp struct {
-		Candidates []struct {
-			Content struct {
-				Parts []struct {
-					Text string `json:"text"`
-				} `json:"parts"`
-			} `json:"content"`
-		} `json:"candidates"`
+	if reply == "" {
+		return "هممم.. ما فهمت عليك حبيبي ✨"
 	}
 
-	json.Unmarshal(bodyBytes, &geminiResp)
-
-	if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
-		return geminiResp.Candidates[0].Content.Parts[0].Text
-	}
-
-	return "💀 خطأ جوجل (تم استخدام الموديل: " + modelName + "):\n" + string(bodyBytes)
+	return reply
 }
 
 func Handler(res http.ResponseWriter, req *http.Request) {
