@@ -30,7 +30,7 @@ var waitingForMessage = make(map[int64]string)
 const botToken = "8667015772:AAGspUPTMcHS698FAKw4US06gBSz-q-UKy8"
 
 // ⚠️ ضع معرف البوت الخاص بك هنا (بدون علامة @) ⚠️
-const botUsername = "my_@my_lylanouri_rep_bot0"
+const botUsername = "my_lylanouri_rep_bot"
 
 func sendMessage(chatID string, text string) {
 	reqBody := &sendMessageReqBody{
