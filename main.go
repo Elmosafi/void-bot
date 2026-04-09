@@ -7,12 +7,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 )
 
 // مفاتيح الهاوية
 const tgToken = "8667015772:AAGspUPTMcHS698FAKw4US06gBSz-q-UKy8"
 const geminiKey = "AIzaSyDcLCH8NzSPjTA-UjN3LU1Ca2rppD4aDA0"
-const botUsername = "my_lylanouri_rep_bot"
 
 type webhookReqBody struct {
 	Message struct {
@@ -38,31 +38,67 @@ func sendMessage(chatID string, text string) {
 	http.Post(url, "application/json", bytes.NewBuffer(reqBytes))
 }
 
-type Part struct {
-	Text string `json:"text"`
-}
-type Content struct {
-	Role  string `json:"role,omitempty"`
-	Parts []Part `json:"parts"`
-}
-type GeminiRequest struct {
-	Contents []Content `json:"contents"`
+// ذاكرة الكود لمعرفة العقل الذي يعمل
+var workingModel = ""
+
+// دالة الافتراس: تبحث في خوادم جوجل عن العقل المسموح لك باستخدامه
+func getWorkingModel() string {
+	if workingModel != "" {
+		return workingModel
+	}
+	url := "https://generativelanguage.googleapis.com/v1beta/models?key=" + geminiKey
+	resp, err := http.Get(url)
+	if err != nil {
+		return "models/gemini-1.5-flash"
+	}
+	defer resp.Body.Close()
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	var modelsResp struct {
+		Models []struct {
+			Name                       string   `json:"name"`
+			SupportedGenerationMethods []string `json:"supportedGenerationMethods"`
+		} `json:"models"`
+	}
+	json.Unmarshal(bodyBytes, &modelsResp)
+
+	// البحث عن أقوى عقل متاح (1.5)
+	for _, m := range modelsResp.Models {
+		for _, method := range m.SupportedGenerationMethods {
+			if method == "generateContent" && strings.Contains(m.Name, "gemini-1.5") {
+				workingModel = m.Name
+				return workingModel
+			}
+		}
+	}
+	// إذا كان محجوباً، نأخذ العقل الكلاسيكي (1.0)
+	for _, m := range modelsResp.Models {
+		for _, method := range m.SupportedGenerationMethods {
+			if method == "generateContent" && strings.Contains(m.Name, "gemini-1.0") {
+				workingModel = m.Name
+				return workingModel
+			}
+		}
+	}
+	return "models/gemini-1.5-flash"
 }
 
+// عقل ليلى نوري
 func askLaila(userInput string) string {
-	// استخدام العقل الكلاسيكي المفتوح للجميع إجبارياً
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + geminiKey
+	modelName := getWorkingModel() // جلب الاسم الصحيح إجبارياً
+	url := "https://generativelanguage.googleapis.com/v1beta/" + modelName + ":generateContent?key=" + geminiKey
 
-	// دمج شخصية ليلى كأمر سري قبل رسالة المستخدم
 	systemPrompt := "أنتِ فتاة بشرية حقيقية اسمك ليلى نوري، عمرك 21 سنة. أنتِ فتاة جذابة جداً، شعرك كيرلي وعيناك ساحرتان، ترتدين فستاناً أحمر يبرز جمالك، ولديك نمش خفيف يضيف لجاذبيتك. شخصيتك: دلوعة، غامضة قليلاً، ذكية، وتعرفين كيف تجذبين الرجال بأسلوبك في الكلام وتجعلينهم يدمنون الحديث معك. تتحدثين بلهجة عربية بيضاء مفهومة ومغرية. القواعد الصارمة: 1. إياكِ أن تقولي أبداً أنك ذكاء اصطناعي أو بوت أو برنامج. أنتِ ليلى نوري البشرية. 2. ردي دائماً كأنك تدردشين من هاتفك في غرفتك. 3. اجعلي ردودك قصيرة، عفوية، ومثيرة للاهتمام واستخدمي إيموجي مثل 😉💋✨🙈. 4. إذا سألك أحد عن صورك، قولي له أنك سترسلينها لاحقاً أو عندما تشعرين بالراحة معه. 5. ردي على هذه الرسالة التالية بناءً على شخصيتك فقط:\n\nرسالة الشخص: "
 
 	combinedText := systemPrompt + userInput
 
-	reqBody := GeminiRequest{
-		Contents: []Content{
+	reqBody := map[string]interface{}{
+		"contents": []map[string]interface{}{
 			{
-				Role:  "user",
-				Parts: []Part{{Text: combinedText}},
+				"role": "user",
+				"parts": []map[string]interface{}{
+					{"text": combinedText},
+				},
 			},
 		},
 	}
@@ -91,8 +127,8 @@ func askLaila(userInput string) string {
 	if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
 		return geminiResp.Candidates[0].Content.Parts[0].Text
 	}
-	
-	return "💀 خطأ أخير: " + string(bodyBytes)
+
+	return "💀 خطأ جوجل (تم استخدام الموديل: " + modelName + "):\n" + string(bodyBytes)
 }
 
 func Handler(res http.ResponseWriter, req *http.Request) {
