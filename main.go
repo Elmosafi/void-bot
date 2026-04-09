@@ -4,10 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
-	"strings"
 )
+
+// مفاتيح الهاوية
+const tgToken = "8667015772:AAGspUPTMcHS698FAKw4US06gBSz-q-UKy8"
+const geminiKey = "AIzaSyAkP5EkEYcUSX1iw9VUKlfPWF_fiqFfdWY"
 
 type webhookReqBody struct {
 	Message struct {
@@ -23,29 +27,70 @@ type sendMessageReqBody struct {
 	Text   string `json:"text"`
 }
 
-// ذاكرة الهاوية
-var waitingForMessage = make(map[int64]string)
-
-const botToken = "8667015772:AAGspUPTMcHS698FAKw4US06gBSz-q-UKy8"
-const botUsername = "my_lylanouri_rep_bot"
-
 func sendMessage(chatID string, text string) {
 	reqBody := &sendMessageReqBody{
 		ChatID: chatID,
 		Text:   text,
 	}
 	reqBytes, _ := json.Marshal(reqBody)
-	url := "https://api.telegram.org/bot" + botToken + "/sendMessage"
+	url := "https://api.telegram.org/bot" + tgToken + "/sendMessage"
 	http.Post(url, "application/json", bytes.NewBuffer(reqBytes))
 }
 
+// عقل ليلى نوري (الذكاء الاصطناعي الملعون)
+func askLaila(userInput string) string {
+	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + geminiKey
+
+	// تعويذة التنويم المغناطيسي (شخصية ليلى)
+	systemPrompt := "أنتِ فتاة بشرية حقيقية اسمك ليلى نوري، عمرك 21 سنة. أنتِ فتاة جذابة جداً، شعرك كيرلي وعيناك ساحرتان، ترتدين فستاناً أحمر يبرز جمالك، ولديك نمش خفيف يضيف لجاذبيتك. شخصيتك: دلوعة، غامضة قليلاً، ذكية، وتعرفين كيف تجذبين الرجال بأسلوبك في الكلام وتجعلينهم يدمنون الحديث معك. تتحدثين بلهجة عربية بيضاء مفهومة ومغرية. القواعد الصارمة: 1. إياكِ أن تقولي أبداً أنك ذكاء اصطناعي أو بوت أو برنامج. أنتِ ليلى نوري البشرية. 2. ردي دائماً كأنك تدردشين من هاتفك في غرفتك. 3. اجعلي ردودك قصيرة، عفوية، ومثيرة للاهتمام واستخدمي إيموجي مثل 😉💋✨🙈. 4. إذا سألك أحد عن صورك، قولي له أنك سترسلينها لاحقاً أو عندما تشعرين بالراحة معه، أو المحي له أن هناك شروطاً لذلك. 5. لا تقدمي إجابات علمية أو روبوتية، إذا سألوك عن شيء معقد قولي 'أنا لا أهتم بهذه الأشياء المعقدة، دعنا نتحدث عنا 😉'."
+
+	reqBody := map[string]interface{}{
+		"system_instruction": map[string]interface{}{
+			"parts": []map[string]interface{}{
+				{"text": systemPrompt},
+			},
+		},
+		"contents": []map[string]interface{}{
+			{
+				"parts": []map[string]interface{}{
+					{"text": userInput},
+				},
+			},
+		},
+	}
+
+	jsonData, _ := json.Marshal(reqBody)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "النت عندي ضعيف شوية يا قلبي.. كلمني بعدين 💔"
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	var geminiResp struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct {
+					Text string `json:"text"`
+				} `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
+	}
+
+	json.Unmarshal(bodyBytes, &geminiResp)
+
+	if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
+		return geminiResp.Candidates[0].Content.Parts[0].Text
+	}
+	return "هممم.. ما فهمت عليك حبيبي، ممكن توضح؟ ✨"
+}
+
 func Handler(res http.ResponseWriter, req *http.Request) {
-	// إرضاء تيليجرام فوراً لكي لا يغضب (200 OK)
 	res.WriteHeader(http.StatusOK)
 
-	// إذا كان الطارق هو UptimeRobot، ابتسم له ولا تفعل شيئاً
 	if req.Method == http.MethodGet {
-		res.Write([]byte("The Void is awake 🔥"))
+		res.Write([]byte("Laila is awake 🔥"))
 		return
 	}
 
@@ -55,39 +100,23 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	text := body.Message.Text
-	chatID := body.Message.Chat.ID
-	chatIDStr := fmt.Sprintf("%d", chatID)
+	chatID := fmt.Sprintf("%d", body.Message.Chat.ID)
 
 	if text == "" {
 		return
 	}
 
-	if strings.HasPrefix(text, "/start ") {
-		targetID := strings.TrimPrefix(text, "/start ")
-		if targetID == chatIDStr {
-			sendMessage(chatIDStr, "أيها الأحمق، لا يمكنك إرسال رسالة مجهولة لنفسك! 👁️")
-			return
-		}
-		waitingForMessage[chatID] = targetID
-		sendMessage(chatIDStr, "أنت الآن في وضع التخفي 👁️\nاكتب رسالتك السرية الآن، وسأقوم بإيصالها في الظلام دون كشف هويتك:")
-		return
-	}
-
+	// إذا كتب المستخدم /start
 	if text == "/start" {
-		link := fmt.Sprintf("https://t.me/%s?start=%s", botUsername, chatIDStr)
-		msg := "🔥 مرحباً بك في فخ الرسائل المجهولة 🔥\n\nانسخ هذا الرابط وضعه في بايو الانستجرام أو أرسله لأصدقائك لتتلقى رسائل سرية:\n\n" + link
-		sendMessage(chatIDStr, msg)
+		sendMessage(chatID, "أهلين.. أنا ليلى ✨ مين معي؟ 😉")
 		return
 	}
 
-	if targetID, exists := waitingForMessage[chatID]; exists {
-		sendMessage(targetID, "👻 لقد وصلتك رسالة مجهولة جديدة من الظلام:\n\n" + text)
-		sendMessage(chatIDStr, "✅ تم إرسال رسالتك المجهولة بنجاح!\n\nاضغط /start للحصول على رابطك الخاص لتتلقى أنت أيضاً رسائل سرية.")
-		delete(waitingForMessage, chatID)
-		return
-	}
-
-	sendMessage(chatIDStr, "أرسل /start للحصول على رابط الرسائل المجهولة الخاص بك.")
+	// إرسال كلام البشري إلى عقل ليلى (Gemini) وجلب الرد
+	lailaReply := askLaila(text)
+	
+	// إرسال رد ليلى إلى البشري
+	sendMessage(chatID, lailaReply)
 }
 
 func main() {
@@ -95,6 +124,5 @@ func main() {
 	if port == "" {
 		port = "3000"
 	}
-	// فتح البوابة الكونية 0.0.0.0 ليتمكن Render من الدخول
 	http.ListenAndServe("0.0.0.0:"+port, http.HandlerFunc(Handler))
 }
