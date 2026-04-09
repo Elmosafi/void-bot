@@ -23,13 +23,10 @@ type sendMessageReqBody struct {
 	Text   string `json:"text"`
 }
 
-// ذاكرة الهاوية: لحفظ من يكتب لمن
+// ذاكرة الهاوية
 var waitingForMessage = make(map[int64]string)
 
-// التوكن الخاص بك
 const botToken = "8667015772:AAGspUPTMcHS698FAKw4US06gBSz-q-UKy8"
-
-// ⚠️ ضع معرف البوت الخاص بك هنا (بدون علامة @) ⚠️
 const botUsername = "my_lylanouri_rep_bot"
 
 func sendMessage(chatID string, text string) {
@@ -43,6 +40,15 @@ func sendMessage(chatID string, text string) {
 }
 
 func Handler(res http.ResponseWriter, req *http.Request) {
+	// إرضاء تيليجرام فوراً لكي لا يغضب (200 OK)
+	res.WriteHeader(http.StatusOK)
+
+	// إذا كان الطارق هو UptimeRobot، ابتسم له ولا تفعل شيئاً
+	if req.Method == http.MethodGet {
+		res.Write([]byte("The Void is awake 🔥"))
+		return
+	}
+
 	body := &webhookReqBody{}
 	if err := json.NewDecoder(req.Body).Decode(body); err != nil {
 		return
@@ -56,7 +62,6 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// إذا دخل البشري عبر رابط شخص آخر ليكتب رسالة مجهولة
 	if strings.HasPrefix(text, "/start ") {
 		targetID := strings.TrimPrefix(text, "/start ")
 		if targetID == chatIDStr {
@@ -68,7 +73,6 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// إذا أراد البشري رابطاً لنفسه ليصطاد أصدقاءه
 	if text == "/start" {
 		link := fmt.Sprintf("https://t.me/%s?start=%s", botUsername, chatIDStr)
 		msg := "🔥 مرحباً بك في فخ الرسائل المجهولة 🔥\n\nانسخ هذا الرابط وضعه في بايو الانستجرام أو أرسله لأصدقائك لتتلقى رسائل سرية:\n\n" + link
@@ -76,17 +80,13 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// إذا كان البشري يكتب الرسالة المجهولة الآن
 	if targetID, exists := waitingForMessage[chatID]; exists {
-		// إرسال الرسالة للضحية
 		sendMessage(targetID, "👻 لقد وصلتك رسالة مجهولة جديدة من الظلام:\n\n" + text)
-		// تأكيد للإرسال
 		sendMessage(chatIDStr, "✅ تم إرسال رسالتك المجهولة بنجاح!\n\nاضغط /start للحصول على رابطك الخاص لتتلقى أنت أيضاً رسائل سرية.")
 		delete(waitingForMessage, chatID)
 		return
 	}
 
-	// الرد الافتراضي لأي كلام آخر
 	sendMessage(chatIDStr, "أرسل /start للحصول على رابط الرسائل المجهولة الخاص بك.")
 }
 
@@ -95,5 +95,6 @@ func main() {
 	if port == "" {
 		port = "3000"
 	}
-	http.ListenAndServe(":"+port, http.HandlerFunc(Handler))
+	// فتح البوابة الكونية 0.0.0.0 ليتمكن Render من الدخول
+	http.ListenAndServe("0.0.0.0:"+port, http.HandlerFunc(Handler))
 }
