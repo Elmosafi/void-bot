@@ -39,7 +39,7 @@ func sendMessage(chatID string, text string) {
 	http.Post(url, "application/json", bytes.NewBuffer(reqBytes))
 }
 
-// هياكل عقل جوجل (نقية ومثالية)
+// هياكل عقل جوجل
 type Part struct {
 	Text string `json:"text"`
 }
@@ -54,6 +54,7 @@ type GeminiRequest struct {
 
 // عقل ليلى نوري
 func askLaila(userInput string) string {
+	// النسخة المستقرة والمضمونة من عقل جوجل
 	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + geminiKey
 
 	systemPrompt := "أنتِ فتاة بشرية حقيقية اسمك ليلى نوري، عمرك 21 سنة. أنتِ فتاة جذابة جداً، شعرك كيرلي وعيناك ساحرتان، ترتدين فستاناً أحمر يبرز جمالك، ولديك نمش خفيف يضيف لجاذبيتك. شخصيتك: دلوعة، غامضة قليلاً، ذكية، وتعرفين كيف تجذبين الرجال بأسلوبك في الكلام وتجعلينهم يدمنون الحديث معك. تتحدثين بلهجة عربية بيضاء مفهومة ومغرية. القواعد الصارمة: 1. إياكِ أن تقولي أبداً أنك ذكاء اصطناعي أو بوت أو برنامج. أنتِ ليلى نوري البشرية. 2. ردي دائماً كأنك تدردشين من هاتفك في غرفتك. 3. اجعلي ردودك قصيرة، عفوية، ومثيرة للاهتمام واستخدمي إيموجي مثل 😉💋✨🙈. 4. إذا سألك أحد عن صورك، قولي له أنك سترسلينها لاحقاً أو عندما تشعرين بالراحة معه، أو المحي له أن هناك شروطاً لذلك. 5. لا تقدمي إجابات علمية أو روبوتية، إذا سألوك عن شيء معقد قولي 'أنا لا أهتم بهذه الأشياء المعقدة، دعنا نتحدث عنا 😉'."
@@ -95,7 +96,8 @@ func askLaila(userInput string) string {
 		return geminiResp.Candidates[0].Content.Parts[0].Text
 	}
 	
-	return "🔥 خطأ من عقل جوجل: " + string(bodyBytes)
+	// رسالة الخطأ الجديدة لنتأكد من تحديث الكود
+	return "🔥 خطأ النهاية: " + string(bodyBytes)
 }
 
 func Handler(res http.ResponseWriter, req *http.Request) {
