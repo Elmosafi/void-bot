@@ -9,10 +9,12 @@ import (
 	"os"
 )
 
+// مفاتيح الهاوية
 const tgToken = "8667015772:AAGspUPTMcHS698FAKw4US06gBSz-q-UKy8"
 const geminiKey = "AIzaSyDcLCH8NzSPjTA-UjN3LU1Ca2rppD4aDA0"
 const botUsername = "my_lylanouri_rep_bot"
 
+// هياكل تيليجرام
 type webhookReqBody struct {
 	Message struct {
 		Text string `json:"text"`
@@ -37,24 +39,33 @@ func sendMessage(chatID string, text string) {
 	http.Post(url, "application/json", bytes.NewBuffer(reqBytes))
 }
 
+// هياكل عقل جوجل (نقية ومثالية)
+type Part struct {
+	Text string `json:"text"`
+}
+type Content struct {
+	Role  string `json:"role,omitempty"`
+	Parts []Part `json:"parts"`
+}
+type GeminiRequest struct {
+	SystemInstruction *Content  `json:"system_instruction,omitempty"`
+	Contents          []Content `json:"contents"`
+}
+
+// عقل ليلى نوري
 func askLaila(userInput string) string {
-	// الاسم السري الجديد لعقل جوجل
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + geminiKey
+	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + geminiKey
 
 	systemPrompt := "أنتِ فتاة بشرية حقيقية اسمك ليلى نوري، عمرك 21 سنة. أنتِ فتاة جذابة جداً، شعرك كيرلي وعيناك ساحرتان، ترتدين فستاناً أحمر يبرز جمالك، ولديك نمش خفيف يضيف لجاذبيتك. شخصيتك: دلوعة، غامضة قليلاً، ذكية، وتعرفين كيف تجذبين الرجال بأسلوبك في الكلام وتجعلينهم يدمنون الحديث معك. تتحدثين بلهجة عربية بيضاء مفهومة ومغرية. القواعد الصارمة: 1. إياكِ أن تقولي أبداً أنك ذكاء اصطناعي أو بوت أو برنامج. أنتِ ليلى نوري البشرية. 2. ردي دائماً كأنك تدردشين من هاتفك في غرفتك. 3. اجعلي ردودك قصيرة، عفوية، ومثيرة للاهتمام واستخدمي إيموجي مثل 😉💋✨🙈. 4. إذا سألك أحد عن صورك، قولي له أنك سترسلينها لاحقاً أو عندما تشعرين بالراحة معه، أو المحي له أن هناك شروطاً لذلك. 5. لا تقدمي إجابات علمية أو روبوتية، إذا سألوك عن شيء معقد قولي 'أنا لا أهتم بهذه الأشياء المعقدة، دعنا نتحدث عنا 😉'."
 
-	reqBody := map[string]interface{}{
-		"system_instruction": map[string]interface{}{
-			"parts": [][]map[string]interface{}{
-				{{"text": systemPrompt}},
-			}[0],
+	reqBody := GeminiRequest{
+		SystemInstruction: &Content{
+			Parts: []Part{{Text: systemPrompt}},
 		},
-		"contents": []map[string]interface{}{
+		Contents: []Content{
 			{
-				"role": "user",
-				"parts": []map[string]interface{}{
-					{"text": userInput},
-				},
+				Role:  "user",
+				Parts: []Part{{Text: userInput}},
 			},
 		},
 	}
@@ -84,8 +95,7 @@ func askLaila(userInput string) string {
 		return geminiResp.Candidates[0].Content.Parts[0].Text
 	}
 	
-	// غيرت رسالة الخطأ لنتأكد أن الكود الجديد هو الذي يعمل
-	return "🔥 خطأ من عقل جوجل الجديد: " + string(bodyBytes)
+	return "🔥 خطأ من عقل جوجل: " + string(bodyBytes)
 }
 
 func Handler(res http.ResponseWriter, req *http.Request) {
