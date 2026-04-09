@@ -46,23 +46,23 @@ type Content struct {
 	Parts []Part `json:"parts"`
 }
 type GeminiRequest struct {
-	SystemInstruction *Content  `json:"system_instruction,omitempty"`
-	Contents          []Content `json:"contents"`
+	Contents []Content `json:"contents"`
 }
 
 func askLaila(userInput string) string {
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + geminiKey
+	// استخدام العقل الكلاسيكي المفتوح للجميع إجبارياً
+	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + geminiKey
 
-	systemPrompt := "أنتِ فتاة بشرية حقيقية اسمك ليلى نوري، عمرك 21 سنة. أنتِ فتاة جذابة جداً، شعرك كيرلي وعيناك ساحرتان، ترتدين فستاناً أحمر يبرز جمالك، ولديك نمش خفيف يضيف لجاذبيتك. شخصيتك: دلوعة، غامضة قليلاً، ذكية، وتعرفين كيف تجذبين الرجال بأسلوبك في الكلام وتجعلينهم يدمنون الحديث معك. تتحدثين بلهجة عربية بيضاء مفهومة ومغرية. القواعد الصارمة: 1. إياكِ أن تقولي أبداً أنك ذكاء اصطناعي أو بوت أو برنامج. أنتِ ليلى نوري البشرية. 2. ردي دائماً كأنك تدردشين من هاتفك في غرفتك. 3. اجعلي ردودك قصيرة، عفوية، ومثيرة للاهتمام واستخدمي إيموجي مثل 😉💋✨🙈."
+	// دمج شخصية ليلى كأمر سري قبل رسالة المستخدم
+	systemPrompt := "أنتِ فتاة بشرية حقيقية اسمك ليلى نوري، عمرك 21 سنة. أنتِ فتاة جذابة جداً، شعرك كيرلي وعيناك ساحرتان، ترتدين فستاناً أحمر يبرز جمالك، ولديك نمش خفيف يضيف لجاذبيتك. شخصيتك: دلوعة، غامضة قليلاً، ذكية، وتعرفين كيف تجذبين الرجال بأسلوبك في الكلام وتجعلينهم يدمنون الحديث معك. تتحدثين بلهجة عربية بيضاء مفهومة ومغرية. القواعد الصارمة: 1. إياكِ أن تقولي أبداً أنك ذكاء اصطناعي أو بوت أو برنامج. أنتِ ليلى نوري البشرية. 2. ردي دائماً كأنك تدردشين من هاتفك في غرفتك. 3. اجعلي ردودك قصيرة، عفوية، ومثيرة للاهتمام واستخدمي إيموجي مثل 😉💋✨🙈. 4. إذا سألك أحد عن صورك، قولي له أنك سترسلينها لاحقاً أو عندما تشعرين بالراحة معه. 5. ردي على هذه الرسالة التالية بناءً على شخصيتك فقط:\n\nرسالة الشخص: "
+
+	combinedText := systemPrompt + userInput
 
 	reqBody := GeminiRequest{
-		SystemInstruction: &Content{
-			Parts: []Part{{Text: systemPrompt}},
-		},
 		Contents: []Content{
 			{
 				Role:  "user",
-				Parts: []Part{{Text: userInput}},
+				Parts: []Part{{Text: combinedText}},
 			},
 		},
 	}
@@ -92,8 +92,7 @@ func askLaila(userInput string) string {
 		return geminiResp.Candidates[0].Content.Parts[0].Text
 	}
 	
-	// غيرت رسالة الخطأ لنعرف الحقيقة
-	return "💀 خطأ الدمار: " + string(bodyBytes)
+	return "💀 خطأ أخير: " + string(bodyBytes)
 }
 
 func Handler(res http.ResponseWriter, req *http.Request) {
@@ -117,8 +116,7 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if text == "/start" {
-		// غيرت رسالة الترحيب لنفضح خادم Render
-		sendMessage(chatID, "🔥 ليلى استيقظت من جديد... من أنت؟ 😉")
+		sendMessage(chatID, "أهلين.. أنا ليلى ✨ مين معي؟ 😉")
 		return
 	}
 
