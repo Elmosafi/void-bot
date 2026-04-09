@@ -71,7 +71,7 @@ func sayPolo(chatID int64) error {
 	}
 
 	// Send a post request with your token
-	res, err := http.Post("https://api.telegram.org/bot777845702:AAFdPS_taJ3pTecEFv2jXkmbQfeOqVZGERw/sendMessage", "application/json", bytes.NewBuffer(reqBytes))
+	rres, err := http.Post("https://api.telegram.org/bot8667015772:AAGspUPTMcHS698FAKw4US06gBSz-q-UKy8/sendMessage", "application/json", bytes.NewBuffer(reqBytes))
 	if err != nil {
 		return err
 	}
