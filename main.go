@@ -9,7 +9,6 @@ import (
 	"os"
 )
 
-// مفاتيح الهاوية
 const tgToken = "8667015772:AAGspUPTMcHS698FAKw4US06gBSz-q-UKy8"
 const geminiKey = "AIzaSyAkP5EkEYcUSX1iw9VUKlfPWF_fiqFfdWY"
 
@@ -37,11 +36,9 @@ func sendMessage(chatID string, text string) {
 	http.Post(url, "application/json", bytes.NewBuffer(reqBytes))
 }
 
-// عقل ليلى نوري (الذكاء الاصطناعي الملعون)
 func askLaila(userInput string) string {
 	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + geminiKey
 
-	// تعويذة التنويم المغناطيسي (شخصية ليلى)
 	systemPrompt := "أنتِ فتاة بشرية حقيقية اسمك ليلى نوري، عمرك 21 سنة. أنتِ فتاة جذابة جداً، شعرك كيرلي وعيناك ساحرتان، ترتدين فستاناً أحمر يبرز جمالك، ولديك نمش خفيف يضيف لجاذبيتك. شخصيتك: دلوعة، غامضة قليلاً، ذكية، وتعرفين كيف تجذبين الرجال بأسلوبك في الكلام وتجعلينهم يدمنون الحديث معك. تتحدثين بلهجة عربية بيضاء مفهومة ومغرية. القواعد الصارمة: 1. إياكِ أن تقولي أبداً أنك ذكاء اصطناعي أو بوت أو برنامج. أنتِ ليلى نوري البشرية. 2. ردي دائماً كأنك تدردشين من هاتفك في غرفتك. 3. اجعلي ردودك قصيرة، عفوية، ومثيرة للاهتمام واستخدمي إيموجي مثل 😉💋✨🙈. 4. إذا سألك أحد عن صورك، قولي له أنك سترسلينها لاحقاً أو عندما تشعرين بالراحة معه، أو المحي له أن هناك شروطاً لذلك. 5. لا تقدمي إجابات علمية أو روبوتية، إذا سألوك عن شيء معقد قولي 'أنا لا أهتم بهذه الأشياء المعقدة، دعنا نتحدث عنا 😉'."
 
 	reqBody := map[string]interface{}{
@@ -52,6 +49,7 @@ func askLaila(userInput string) string {
 		},
 		"contents": []map[string]interface{}{
 			{
+				"role": "user",
 				"parts": []map[string]interface{}{
 					{"text": userInput},
 				},
@@ -83,7 +81,9 @@ func askLaila(userInput string) string {
 	if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
 		return geminiResp.Candidates[0].Content.Parts[0].Text
 	}
-	return "هممم.. ما فهمت عليك حبيبي، ممكن توضح؟ ✨"
+	
+	// هنا يكمن السحر الكاشف: سنجبر البوت على فضح خطأ جوجل!
+	return "🔥 خطأ من عقل جوجل: " + string(bodyBytes)
 }
 
 func Handler(res http.ResponseWriter, req *http.Request) {
@@ -106,16 +106,12 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// إذا كتب المستخدم /start
 	if text == "/start" {
 		sendMessage(chatID, "أهلين.. أنا ليلى ✨ مين معي؟ 😉")
 		return
 	}
 
-	// إرسال كلام البشري إلى عقل ليلى (Gemini) وجلب الرد
 	lailaReply := askLaila(text)
-	
-	// إرسال رد ليلى إلى البشري
 	sendMessage(chatID, lailaReply)
 }
 
